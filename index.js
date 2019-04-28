@@ -1,0 +1,1 @@
+const { getHolidayData } = require('./src/holiday');

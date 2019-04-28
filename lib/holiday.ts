@@ -121,7 +121,7 @@ function simplify(result: { VCALENDAR: { VEVENT: object; }[]; }): Holiday[] {
 
 type HolidayDataCallback = (error?: Error, data?: Holiday[]) => void;
 
-function getHolidayData(callback: HolidayDataCallback): void {
+export function getHolidayData(callback: HolidayDataCallback): void {
     get(SOURCE_URL, (error, response, body: string) => {
         if (error) return callback(error);
         let data = convert(body);
@@ -129,5 +129,3 @@ function getHolidayData(callback: HolidayDataCallback): void {
         return callback(null, simplify(data));
     });
 }
-
-module.exports = getHolidayData;

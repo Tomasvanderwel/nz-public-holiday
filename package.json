@@ -1,10 +1,13 @@
 {
     "name": "nz-public-holidays",
-    "version": "1.1.0",
+    "version": "1.1.02",
     "author": {
         "name": "tomas~"
     },
-    "repository": "github:Tomasvanderwel/nz-public-holiday",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Tomasvanderwel/nz-public-holiday.git"
+    },
     "private": false,
     "dependencies": {
         "moment": "^2.22.2",
