@@ -32,6 +32,13 @@ const REGIONS = {
     'chatham; island': 'Chatham Islands'
 };
 
+interface Holiday {
+    date: string;
+    name: string;
+    region: string;
+    category: string;
+}
+
 function convert(str: string): any {
     let key = '';
     let value = '';
@@ -101,7 +108,7 @@ function getRegion(name: string): string {
     return 'All';
 }
 
-function simplify(result: { VCALENDAR: { VEVENT: object; }[]; }) {
+function simplify(result: { VCALENDAR: { VEVENT: object; }[]; }): Holiday[] {
     let cursor = result.VCALENDAR[0].VEVENT;
     return Object.entries(cursor).map(([key, value]) => {
         let date = moment(value['DTSTART;VALUE=DATE']).tz('Pacific/Auckland').format('YYYY-MM-DD');
@@ -112,11 +119,15 @@ function simplify(result: { VCALENDAR: { VEVENT: object; }[]; }) {
     }).sort(sortDates);
 }
 
-export function getHolidayData(callback: (error?: Error, data?: object) => void): Request {
-    return get(SOURCE_URL, (error, response, body: string) => {
+type HolidayDataCallback = (error?: Error, data?: Holiday[]) => void;
+
+function getHolidayData(callback: HolidayDataCallback): void {
+    get(SOURCE_URL, (error, response, body: string) => {
         if (error) return callback(error);
         let data = convert(body);
         if (!data) return callback(new Error('iCal response could not be parsed to JSON'));
         return callback(null, simplify(data));
     });
 }
+
+module.exports = getHolidayData;

@@ -123,4 +123,4 @@ function getHolidayData(callback) {
         return callback(null, simplify(data));
     });
 }
-exports.getHolidayData = getHolidayData;
+module.exports = getHolidayData;
