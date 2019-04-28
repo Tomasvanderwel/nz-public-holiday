@@ -1,1 +1,3 @@
-const { getHolidayData } = require('./src/holiday');
+const { getHolidayData } = require('./lib/holiday');
+
+module.exports = getHolidayData;
