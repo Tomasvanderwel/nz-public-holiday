@@ -4,6 +4,7 @@
     "author": {
         "name": "tomas~"
     },
+    "repository": "github:Tomasvanderwel/nz-public-holiday",
     "private": false,
     "dependencies": {
         "moment": "^2.22.2",
