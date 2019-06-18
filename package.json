@@ -1,6 +1,6 @@
 {
     "name": "nz-public-holidays",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "author": {
         "name": "tomas~"
     },
@@ -19,7 +19,7 @@
         "@types/request": "^2.47.1"
     },
     "deprecated": false,
-    "description": "Gets New Zealand public holiday details from a govt .ical",
+    "description": "Gets New Zealand public holiday details from a government .ical",
     "keywords": [
         "public",
         "holiday",
