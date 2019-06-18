@@ -1,5 +1,17 @@
-import { get, Request } from 'request';
+import { get } from 'request';
 import * as moment from 'moment-timezone';
+
+type Region = 'Northland'|'Auckland'|'Taranaki'|'Hawke\'s Bay'|'Wellington'|'Marlborough'|'Nelson'|'Buller'|'South Canterbury'|'Canterbury'|'Westland'|'Otago'|'Southland'|'Chatham Islands'|'All';
+type Category = 'New Year\'s Day'|'Day after New Year\'s Day'|'Waitangi Day'|'Good Friday'|'Easter Monday'|'ANZAC Day'|'Queen\'s Birthday'|'Labour Day'|'Christmas Day'|'Boxing Day'|'Anniversary';
+type Generic = { [key: string]: any };
+type CalendarData = { VCALENDAR: { VEVENT: Generic; }[]; };
+interface Holiday {
+    date: string;
+    name: string;
+    region: Region;
+    category: Category;
+}
+type HolidayDataCallback = (error?: Error, data?: Holiday[]) => void;
 
 const NEW_LINE = /\r\n|\n/;
 const SOURCE_URL = 'http://apps.employment.govt.nz/ical/public-holidays-all.ics';
@@ -15,7 +27,7 @@ const CATEGORIES = {
     'christmas': 'Christmas Day',
     'boxing': 'Boxing Day'
 };
-const REGIONS = {
+const REGIONS: { [name: string]: Region } = {
     'northland': 'Northland',
     'auckland': 'Auckland',
     'taranaki': 'Taranaki',
@@ -32,19 +44,12 @@ const REGIONS = {
     'chatham; island': 'Chatham Islands'
 };
 
-interface Holiday {
-    date: string;
-    name: string;
-    region: string;
-    category: string;
-}
-
-function convert(str: string): any {
+function iCalToJSO(raw: string): any {
     let key = '';
-    let value = '';
+    let block = '';
     let response = {};
     let parent = {};
-    let lines = str.split(NEW_LINE);
+    const lines = raw.split(NEW_LINE);
     let that = response;
     let parents = [];
     let splitLength, i, line;
@@ -57,15 +62,14 @@ function convert(str: string): any {
             if (!splitLength) continue;
 
             key = line.substr(0, splitLength);
-            value = line.substr(splitLength + 1);
+            block = line.substr(splitLength + 1);
             switch (key) {
                 case 'BEGIN':
                     parents.push(parent);
                     parent = that;
-                    if (!parent[value])
-                        parent[value] = [];
+                    parent[block] = parent[block] ? parent[block] : [];
                     that = {};
-                    parent[value].push(that);
+                    parent[block].push(that);
                     break;
                 case 'END':
                     that = parent;
@@ -75,9 +79,9 @@ function convert(str: string): any {
                     if (that[key]) {
                         if (!Array.isArray(that[key]))
                             that[key] = [that[key]];
-                        that[key].push(value);
+                        that[key].push(block);
                     } else
-                        that[key] = value;
+                        that[key] = block;
             }
         }
     }
@@ -89,43 +93,46 @@ function sortDates(a: { date: string|number }, b: { date: string|number }): numb
         new Date(b.date).getTime();
 }
 
-function getCategory(name: string): string {
-    let lower = name.toLowerCase();
+function getCategory(name: string): Category {
+    const lower = name.toLowerCase();
     for (let i in CATEGORIES) {
         if (lower.search(i) + 1) return CATEGORIES[i];
     }
     return 'Anniversary';
 }
 
-function getRegion(name: string): string {
-    let lower = name.toLowerCase();
-    let selection = Object.entries(REGIONS).filter(([label]) => {
-        return label.split('; ').every((value) => {
+function getRegion(name: string): Region {
+    const lower = name.toLowerCase();
+    const selection = Object.entries(REGIONS).filter(([label]) => {
+        return label.split('; ').find((value) => {
             return lower.search(value) + 1 ? true : false;
         });
     });
-    if (selection.length) return selection[0][1];
-    return 'All';
+    const region: Region = selection.length ? selection[0][1] : 'All';
+    return region;
 }
 
-function simplify(result: { VCALENDAR: { VEVENT: object; }[]; }): Holiday[] {
-    let cursor = result.VCALENDAR[0].VEVENT;
+function getName(value: Generic): string {
+    const name = value['SUMMARY;LANGUAGE=en-nz'] || value['SUMMARY;LANGUAGE=en-us'];
+    return name;
+}
+
+function simplify(result: CalendarData): Holiday[] {
+    const cursor = result.VCALENDAR[0].VEVENT;
     return Object.entries(cursor).map(([key, value]) => {
-        let date = moment(value['DTSTART;VALUE=DATE']).tz('Pacific/Auckland').format('YYYY-MM-DD');
-        let name = value['SUMMARY;LANGUAGE=en-nz'] || value['SUMMARY;LANGUAGE=en-us'];
-        let region = getRegion(name);
-        let category = getCategory(name);
+        const date = moment(value['DTSTART;VALUE=DATE']).tz('Pacific/Auckland').format('YYYY-MM-DD');
+        const name = getName(value)
+        const region: Region = getRegion(name);
+        const category: Category = getCategory(name);
         return { date, name, region, category };
     }).sort(sortDates);
 }
 
-type HolidayDataCallback = (error?: Error, data?: Holiday[]) => void;
-
 export function getHolidayData(callback: HolidayDataCallback): void {
-    get(SOURCE_URL, (error, response, body: string) => {
+    get(SOURCE_URL, (error, response, body) => {
         if (error) return callback(error);
-        let data = convert(body);
-        if (!data) return callback(new Error('iCal response could not be parsed to JSON'));
+        const data: CalendarData = iCalToJSO(body);
+        if (!data) return callback(new Error('iCal response could not be parsed to JSO'));
         return callback(null, simplify(data));
     });
 }
