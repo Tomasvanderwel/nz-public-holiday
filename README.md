@@ -1,4 +1,4 @@
-<h1 align="center">Welcome to nz-public-holidays 👋</h1>
+<h1 align="center">Welcome to nz-public-holidays</h1>
 <p>
   <img src="https://img.shields.io/badge/version-1.1.5-blue.svg?cacheSeconds=2592000" />
   <a href="https://github.com/Tomasvanderwel/nz-public-holiday#readme">
@@ -17,7 +17,7 @@
 ## Install
 
 ```sh
-npm install
+npm install nz-public-holidays
 ```
 
 ## Usage
@@ -25,23 +25,42 @@ npm install
 ```js
 const holidays = require('nz-public-holidays');
 
-holidays((error, result) => {
-    if (error) console.log(error);
-    console.log(result[0], result[result.length - 1]);
+holidays((error, holidays) => {
+    if (error) return console.error(error);
+    console.log(...holidays.map((holiday) => {
+      const { date, name, region, category, observedByWeekendWorker } = holiday;
+      return `UPDATE tablename SET [HolidayName] = '${category}'` +
+        `, [IsHoliday] = 1 WHERE [Date] = '${date}'`;
+    }));
 });
 ```
 
+## Response Schema
+
+| Column name | Type | Description |
+|-------------------------|---------|-------------------------------------------------------|
+| date | string | Date of holiday YYYY-MM-DD |
+| name | string | Raw name of holiday |
+| region | string | Name of applicable region |
+| category | string | Standardised name of holiday |
+| observedByWeekendWorker | boolean | If holiday is observed exclusively by weekend workers |
+
+### Regions
+
+Northland, Auckland, Taranaki, Hawke's Bay, Wellington, Marlborough, Nelson, Buller, South Canterbury, Canterbury, Westland, Otago, Southland, Chatham Islands, All
+
+### Categories
+
+New Year's Day, Day after New Year's Day, Waitangi Day, Good Friday, Easter Monday, ANZAC Day, Queen's Birthday, Labour Day, Christmas Day, Boxing Day, Anniversary (Region)
+
 ## Author
 
-👤 **Tomas van der Wel**
+**Tomas van der Wel**
 
 * Github: [@Tomasvanderwel](https://github.com/Tomasvanderwel)
 
-## Show your support
 
-Give a ⭐️ if this project helped you!
-
-## 📝 License
+## License
 
 Copyright © 2019 [Tomas van der Wel](https://github.com/Tomasvanderwel).<br />
 This project is [MIT](https://github.com/Tomasvanderwel/nz-public-holiday/blob/master/LICENSE) licensed.
