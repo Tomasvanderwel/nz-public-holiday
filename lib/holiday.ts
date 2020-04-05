@@ -3,21 +3,22 @@ import * as moment from 'moment-timezone';
 
 type Region = 'Northland'|'Auckland'|'Taranaki'|'Hawke\'s Bay'|'Wellington'|'Marlborough'|'Nelson'|'Buller'|'South Canterbury'|'Canterbury'|'Westland'|'Otago'|'Southland'|'Chatham Islands'|'All';
 type Category = 'New Year\'s Day'|'Day after New Year\'s Day'|'Waitangi Day'|'Good Friday'|'Easter Monday'|'ANZAC Day'|'Queen\'s Birthday'|'Labour Day'|'Christmas Day'|'Boxing Day'|'Anniversary';
-type Generic = { [key: string]: any };
-type CalendarData = { VCALENDAR: { VEVENT: Generic; }[]; };
+interface Generic { [key: string]: any; }
+interface CalendarData { VCALENDAR: { VEVENT: Generic; }[]; }
 interface Holiday {
     date: string;
     name: string;
     region: Region;
     category: Category;
+    observedByWeekendWorker: boolean;
 }
 type HolidayDataCallback = (error?: Error, data?: Holiday[]) => void;
 
 const NEW_LINE = /\r\n|\n/;
 const SOURCE_URL = 'http://apps.employment.govt.nz/ical/public-holidays-all.ics';
 const CATEGORIES = {
-    'new': 'New Year\'s Day',
     'day after': 'Day after New Year\'s Day',
+    'new': 'New Year\'s Day',
     'waitangi': 'Waitangi Day',
     'good': 'Good Friday',
     'easter': 'Easter Monday',
@@ -113,18 +114,29 @@ function getRegion(name: string): Region {
 }
 
 function getName(value: Generic): string {
-    const name = value['SUMMARY;LANGUAGE=en-nz'] || value['SUMMARY;LANGUAGE=en-us'];
+    let name = (value['SUMMARY;LANGUAGE=en-nz'] || value['SUMMARY;LANGUAGE=en-us']);
+    if (typeof value[''] === 'string') return name + value[''].substr(1);
+    if (!value[''] || !Array.isArray(value[''])) return name;
+    let item = value[''][0];
+    if (/^\t[A-Z\d]{41}$/.test(item) === false &&
+        /^\tidaydates/.test(item) === false) return name + item.substr(1);
     return name;
+}
+
+function getWeekendWorkerObservance(name: string): boolean {
+    return /not/.test(name);
 }
 
 function simplify(result: CalendarData): Holiday[] {
     const cursor = result.VCALENDAR[0].VEVENT;
     return Object.entries(cursor).map(([key, value]) => {
-        const date = moment(value['DTSTART;VALUE=DATE']).tz('Pacific/Auckland').format('YYYY-MM-DD');
-        const name = getName(value)
+        const date = moment(value['DTSTART;VALUE=DATE'])
+            .tz('Pacific/Auckland').format('YYYY-MM-DD');
+        const name = getName(value);
         const region: Region = getRegion(name);
         const category: Category = getCategory(name);
-        return { date, name, region, category };
+        const observedByWeekendWorker = getWeekendWorkerObservance(name);
+        return { date, name, region, category, observedByWeekendWorker };
     }).sort(sortDates);
 }
 
