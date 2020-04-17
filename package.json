@@ -14,7 +14,8 @@
         "moment-timezone": "0.5.23"
     },
     "devDependencies": {
-        "@types/moment": "^2.13.0"
+        "@types/moment": "2.13.0",
+        "@types/node": "13.11.1"
     },
     "deprecated": false,
     "description": "Gets New Zealand public holiday details from a government .ical",
