@@ -1,5 +1,10 @@
-import { get } from 'request';
+import axios, { AxiosResponse } from 'axios';
 import * as moment from 'moment-timezone';
+import { callbackify } from 'util';
+
+type GetCallback = (uri: string, opts: any, callback: (error?: Error, response?: AxiosResponse<any>) => void) => void;
+const { get } = axios;
+const getCallback: GetCallback = callbackify(get);
 
 type Region = 'Northland'|'Auckland'|'Taranaki'|'Hawke\'s Bay'|'Wellington'|'Marlborough'|'Nelson'|'Buller'|'South Canterbury'|'Canterbury'|'Westland'|'Otago'|'Southland'|'Chatham Islands'|'All';
 type Category = 'New Year\'s Day'|'Day after New Year\'s Day'|'Waitangi Day'|'Good Friday'|'Easter Monday'|'ANZAC Day'|'Queen\'s Birthday'|'Labour Day'|'Christmas Day'|'Boxing Day'|'Anniversary';
@@ -123,7 +128,7 @@ function getName(value: Generic): string {
     return name;
 }
 
-function getWeekendWorkerObservance(name: string): boolean {
+function getObservance(name: string): boolean {
     return /not/.test(name);
 }
 
@@ -135,16 +140,28 @@ function simplify(result: CalendarData): Holiday[] {
         const name = getName(value);
         const region: Region = getRegion(name);
         const category: Category = getCategory(name);
-        const observedByWeekendWorker = getWeekendWorkerObservance(name);
+        const observedByWeekendWorker = getObservance(name);
         return { date, name, region, category, observedByWeekendWorker };
     }).sort(sortDates);
 }
 
-export function getHolidayData(callback: HolidayDataCallback): void {
-    get(SOURCE_URL, (error, response, body) => {
+export function getHolidayData(): Promise<Holiday[]>;
+export function getHolidayData(callback: HolidayDataCallback): void;
+export function getHolidayData(callback?: HolidayDataCallback): void|Promise<Holiday[]> {
+    if (callback) return getCallback(SOURCE_URL, null, (error, response) => {
         if (error) return callback(error);
-        const data: CalendarData = iCalToJSO(body);
+        const data: CalendarData = iCalToJSO(response.data);
         if (!data) return callback(new Error('iCal response could not be parsed to JSO'));
         return callback(null, simplify(data));
+    });
+    return new Promise(async (resolve, reject) => {
+        try {
+            const response = await axios.get(SOURCE_URL);
+            const data: CalendarData = iCalToJSO(response.data);
+            if (!data) return reject(new Error('iCal response could not be parsed to JSO'));
+            return resolve(simplify(data));
+        } catch (error) {
+            return reject(error);
+        }
     });
 }
