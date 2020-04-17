@@ -1,6 +1,6 @@
 <h1 align="center">Welcome to nz-public-holidays</h1>
 <p>
-  <img src="https://img.shields.io/badge/version-1.2.0-blue.svg?cacheSeconds=2592000" />
+  <img src="https://img.shields.io/badge/version-1.3.0-blue.svg?cacheSeconds=2592000" />
   <a href="https://github.com/Tomasvanderwel/nz-public-holiday#readme">
     <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" target="_blank" />
   </a>
@@ -33,6 +33,17 @@ holidays((error, holidays) => {
         `, [IsHoliday] = 1 WHERE [Date] = '${date}'`;
     }));
 });
+
+// OR
+
+(async () => {
+  const holidays = await holidays();
+  console.log(...holidays.map((holiday) => {
+      const { date, name, region, category, observedByWeekendWorker } = holiday;
+      return `UPDATE tablename SET [HolidayName] = '${category}'` +
+        `, [IsHoliday] = 1 WHERE [Date] = '${date}'`;
+  }));
+})();
 ```
 
 ## Response Schema
