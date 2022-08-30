@@ -11,7 +11,7 @@
     "private": false,
     "dependencies": {
         "axios": "0.19.2",
-        "moment-timezone": "0.5.23"
+        "moment-timezone": "0.5.35"
     },
     "devDependencies": {
         "@types/moment": "2.13.0",
